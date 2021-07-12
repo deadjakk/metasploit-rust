@@ -1,3 +1,4 @@
+
 # Metasploit Rust Shim
 Rust shim for the metasploit-framework
 
@@ -15,3 +16,6 @@ Rust shim for the metasploit-framework
 Note: the module file MUST use .crs as the extension, this is how the shim will determine this file.
 For more information on setting up dependencies for cargo-script check [the repo for cargo-script](https://github.com/DanielKeep/cargo-script
   
+## Working:
+  
+  ![rust-shim-working](https://user-images.githubusercontent.com/30613497/125356809-59d30580-e32c-11eb-8908-5da4a30299fb.png)
