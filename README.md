@@ -2,7 +2,7 @@
 Rust shim for the metasploit-framework
 
 # Pre-requisites 
-1. Cargo install 
+1. Install cargo, the rust toolchain
 2. The `script` subcommand for cargo (you can install this using `cargo install cargo-script` once you have cargo installed.
 
 # To Install
