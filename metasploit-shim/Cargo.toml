@@ -1,7 +1,7 @@
 [package]
 name = "metasploit-shim"
-version = "0.1.1"
-authors = ["deadjakk <deadjakk@shell.rip>"]
+version = "0.1.2"
+authors = ["jonathan peterson <deadjakk@shell.rip>"]
 edition = "2018"
 description = "metasploit rust shim library"
 repository = "https://github.com/deadjakk/metasploit-rust-shim/"
