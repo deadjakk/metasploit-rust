@@ -1,11 +1,11 @@
 [package]
 name = "metasploit-shim"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["jonathan peterson <deadjakk@shell.rip>"]
 edition = "2018"
-description = "metasploit rust shim library"
+description = "metasploit jsonrpc bridge library"
 repository = "https://github.com/deadjakk/metasploit-rust-shim/"
-license = "MIT"
+license-file = "LICENSE.md"
 keywords = ["penetration","testing","metasploit","msf","shim"]
 categories = ["development-tools::ffi"]
 include = ["src/**/*","Cargo.toml"]
