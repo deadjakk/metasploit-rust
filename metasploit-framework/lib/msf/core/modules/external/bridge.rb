@@ -245,13 +245,13 @@ class Msf::Modules::External::RustBridge < Msf::Modules::External::Bridge
 
   def initialize(module_path, framework: nil)
     super
-    self.cmd = ['cargo', 'script', self.path]
+    self.cmd = ['rust-script',  self.path]
   end
 
   def handle_exception(error)
     case error
     when Errno::ENOENT
-      LoadError.new('Failed to execute external Go module. Please ensure you have Go installed on your environment.')
+      LoadError.new('Failed to execute external Rust module. Please ensure you have Go installed on your environment.')
     else
       super
     end
