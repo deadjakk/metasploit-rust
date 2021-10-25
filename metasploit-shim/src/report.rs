@@ -3,6 +3,7 @@ use serde_json::Value;
 
 /// As the name implies, this is used to wrap the parameters received from
 /// API requests. This is done so as to allow for easier retrieval of arguments.
+#[derive(Debug)]
 pub struct MsfParamWrapper(Option<Value>);
 
 pub trait GetArg {

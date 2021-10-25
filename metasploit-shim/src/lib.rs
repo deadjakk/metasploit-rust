@@ -17,14 +17,14 @@ type RunFn = fn(&MsfParamWrapper)->Result<Option<String>,Box<dyn Error>>;
 /// Function Pointer for the metasploit 'check' action callback
 type CheckFn = fn(&MsfParamWrapper)->Result<(),Box<dyn Error>>;
 
-#[derive(serde_derive::Deserialize,serde_derive::Serialize, Debug)]
+#[derive(serde_derive::Deserialize,serde_derive::Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")] // since msf requires 'type', a reserved kw
 pub struct Reference {
     pub Type: String, // a reserved keyword
     pub Ref: String,  // a reserved keyword
 }
 
-#[derive(serde_derive::Deserialize,serde_derive::Serialize, Debug)]
+#[derive(serde_derive::Deserialize,serde_derive::Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")] // since msf requires 'type', a reserved kw
 pub struct ModuleOption {
     pub Type: String, // rust kw
@@ -33,17 +33,36 @@ pub struct ModuleOption {
     pub default: String,
 }
 
-#[derive(serde_derive::Deserialize,serde_derive::Serialize, Debug)]
+#[derive(serde_derive::Deserialize,serde_derive::Serialize, Debug,Default)]
+#[serde(rename_all = "camelCase")] // since msf requires 'type', a reserved kw
+pub struct Target {
+    pub platform: String,
+    pub arch: String,
+}
+
+#[derive(serde_derive::Deserialize,serde_derive::Serialize, Debug,Default)]
+#[serde(rename_all = "camelCase")] // since msf requires 'type', a reserved kw
+pub struct Payload {
+    pub command_stager_flavor: String,
+}
+
+#[derive(serde_derive::Deserialize,serde_derive::Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")] // since msf requires 'type', a reserved kw
 pub struct Metadata {
     pub name: String,
     pub description: String,
     pub authors: Vec<String>,
     pub date: String,
+    pub rank: String,
+    pub targets: Vec<Target>,
+    pub payload: Payload,
     pub Type: String,
     pub privileged: bool,
     pub options: HashMap<String,ModuleOption>,
+    pub license: String,
+    pub wfsdelay: usize,
     pub references: Vec<Reference>,
+    pub capabilities: Vec<String>,
     // not sure if this is fully supported by the MSF API
     // so I will leave this out for now.
     // pub capabilities: Vec<String>, 
